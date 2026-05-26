@@ -1,0 +1,36 @@
+graph AuthRecommend {
+  input user: User
+  input token: Token
+  input products: Product[]
+
+  node verify: Auth.VerifyToken {
+    intent: "Verificar token do usuário"
+    risk: "critical"
+    deterministic: true
+  }
+
+  node recommend: ML.RecommendProducts {
+    intent: "Recomendar produtos com base no histórico"
+    risk: "medium"
+    deterministic: false
+    topK: 5
+  }
+
+  node block: Action.TriggerAnomaly {
+    intent: "Bloquear fluxo por possível anomalia"
+    risk: "high"
+    deterministic: true
+  }
+
+  edge user -> verify
+  edge token -> verify
+  edge user -> recommend
+  edge products -> recommend
+
+  branch verify.valid {
+    true -> recommend
+    false -> block
+  }
+
+  output result: recommend.items
+}

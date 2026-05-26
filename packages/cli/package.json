@@ -1,0 +1,17 @@
+{
+  "name": "@momom/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "momom": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@momom/core": "file:../core"
+  }
+}

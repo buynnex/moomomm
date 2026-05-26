@@ -1,0 +1,12 @@
+graph HelloUser {
+  input name: string
+
+  node greeting: Text.Template {
+    intent: "Criar mensagem de boas-vindas"
+    template: "Olá, {name}"
+  }
+
+  edge name -> greeting
+
+  output message: greeting.text
+}
