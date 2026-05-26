@@ -23,6 +23,21 @@ export function isMomomDocument(document: vscode.TextDocument): boolean {
   return document.languageId === "momom" || document.uri.path.toLowerCase().endsWith(".momom");
 }
 
+export function getActiveOrVisibleMomomDocument(): vscode.TextDocument | undefined {
+  const activeDocument = vscode.window.activeTextEditor?.document;
+  if (activeDocument && isMomomDocument(activeDocument)) {
+    return activeDocument;
+  }
+
+  for (const editor of vscode.window.visibleTextEditors) {
+    if (isMomomDocument(editor.document)) {
+      return editor.document;
+    }
+  }
+
+  return undefined;
+}
+
 export function getDocumentText(document: vscode.TextDocument): string {
   return document.getText();
 }

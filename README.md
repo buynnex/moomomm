@@ -184,6 +184,7 @@ Estado atual da extensao:
 - sem IA
 - diagnostics automaticos vem do LSP e reutilizam `momom-core`
 - preview e offline e nao usa CDN
+- commands usam o documento `.momom` ativo, ou o primeiro `.momom` visivel quando o foco esta em tabs de preview, JSON ou output
 - document links internos ainda nao foram implementados
 
 ## Estrutura

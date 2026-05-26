@@ -10,7 +10,7 @@ import {
 import type { Diagnostic as MomomDiagnostic } from "@momom/core";
 import { MomomDiagnostics } from "./diagnostics.js";
 import { buildGraphPreviewHtml, MomomVirtualDocumentProvider, openVirtualJsonDocument } from "./preview.js";
-import { getGeneratedFileName, isMomomDocument, parseMomomDocument } from "./utils.js";
+import { getActiveOrVisibleMomomDocument, getGeneratedFileName, parseMomomDocument } from "./utils.js";
 
 export interface CommandDependencies {
   diagnostics: MomomDiagnostics;
@@ -161,8 +161,8 @@ export function registerMomomCommands(
 }
 
 function getActiveMomomDocument(): vscode.TextDocument | undefined {
-  const document = vscode.window.activeTextEditor?.document;
-  if (!document || !isMomomDocument(document)) {
+  const document = getActiveOrVisibleMomomDocument();
+  if (!document) {
     void vscode.window.showWarningMessage("Momom: open a .momom file first.");
     return undefined;
   }
