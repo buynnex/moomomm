@@ -2,7 +2,7 @@
   "name": "@momom/vscode-extension",
   "displayName": "Momom Language Support",
   "description": "Basic VS Code support for the Momom semantic graph language.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "main": "./dist/extension.js",

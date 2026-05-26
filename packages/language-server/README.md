@@ -1,13 +1,16 @@
 # Momom Language Server
 
-Language Server basico da linguagem Momom para uso local e offline no VS Code.
+Language Server local e offline da linguagem Momom para uso no VS Code.
 
-Recursos da v0.6:
+Recursos da v0.7:
 
-- diagnostics em tempo real usando `@momom/core`
-- completion basico de keywords, tipos, nodes, propriedades e portas conhecidas
-- hover basico para keywords, nodes, referencias e propriedades comuns
-- document symbols para Outline
+- diagnostics com debounce usando `@momom/core`
+- completion contextual por posicao do cursor
+- hover enriquecido para contratos, referencias e edges
+- go to definition basico
+- find references basico
+- rename inicial para inputs e nodes
+- document symbols agrupados para Outline
 
 Build:
 

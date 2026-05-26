@@ -1,6 +1,6 @@
 # MOMOM
 
-MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker, flow checker, compiler deterministicos e suporte basico de Language Server no VS Code.
+MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker, flow checker, compiler deterministicos e suporte de Language Server local no VS Code.
 
 ## O que e Momom
 
@@ -62,15 +62,21 @@ npm run momom -- inspect examples/auth_recommend.momom --format flow
 
 ## Momom v0.6 Language Server
 
-O MOMOM v0.6 adiciona um Language Server basico em `packages/language-server` e faz a extensao VS Code usar esse servidor para recursos de edicao em tempo real.
+O MOMOM v0.6 adicionou o primeiro Language Server basico em `packages/language-server` e passou a usar esse servidor na extensao VS Code para recursos de edicao em tempo real.
 
-Recursos da v0.6:
+## Momom v0.7 LSP Context Intelligence
 
-- diagnostics em tempo real via LSP
-- completion basico para keywords, tipos nativos, node types, risk values e propriedades comuns
-- completion contextual de portas e outputs conhecidos quando o contexto permite
-- hover basico para keywords, node types, node ids, inputs, outputs conhecidos, `risk` e `deterministic`
-- document symbols para Outline
+O MOMOM v0.7 fortalece o Language Server com leitura de contexto por cursor e navegacao basica dentro do arquivo.
+
+Recursos da v0.7:
+
+- completion contextual para top-level, input type, node type, propriedades, references e ports
+- hover enriquecido para contratos, edges, branch sources, referencias e node ids
+- go to definition basico para inputs e node ids
+- find references basico para inputs, nodes e `node.output`
+- rename inicial para inputs e node ids
+- document symbols agrupados por `Inputs`, `Nodes`, `Branches`, `Edges` e `Outputs`
+- diagnostics com debounce para evitar revalidacao agressiva ao digitar
 - comandos da v0.5 continuam funcionando
 
 Builds principais:
@@ -153,8 +159,15 @@ Como testar manualmente:
 5. Testar no editor:
    - erros em tempo real
    - `Ctrl+Space` para autocomplete
+   - `Ctrl+Space` em `input name:` para tipos
+   - `Ctrl+Space` depois de `node greeting:` para node types
+   - `Ctrl+Space` depois de `edge name -> greeting.` para ports
    - hover sobre `Text.Template`
-   - Outline com graph, inputs, nodes e outputs
+   - hover sobre node ids e referencias como `greeting.text`
+   - `F12` em `greeting` dentro de `output message: greeting.text`
+   - `Shift+F12` em `input name`
+   - `F2` em `greeting` ou `name`
+   - Outline com grupos laterais
 6. Rodar no Command Palette:
    - `Momom: Validate Current File`
    - `Momom: Show IR`
@@ -166,21 +179,22 @@ Estado atual da extensao:
 
 - experimental
 - usa Language Server local e offline
-- autocomplete ainda basico
+- autocomplete contextual ainda heuristico
 - sem semantic tokens
 - sem IA
 - diagnostics automaticos vem do LSP e reutilizam `momom-core`
 - preview e offline e nao usa CDN
+- document links internos ainda nao foram implementados
 
 ## Estrutura
 
 - `packages/core`: AST, parser, diagnostics, validator, type system, references resolver, flow checker, IR, Mermaid e compiler.
 - `packages/cli`: comandos `parse`, `validate`, `compile`, `graph` e `inspect`.
-- `packages/language-server`: servidor LSP basico para diagnostics, completion, hover e symbols.
+- `packages/language-server`: servidor LSP com diagnostics, completion contextual, hover, definition, references, rename e symbols.
 - `packages/vscode-extension`: extensao experimental do VS Code.
 - `examples`: grafos validos e invalidos.
 - `spec`: especificacoes da linguagem.
 
 ## Estado do projeto
 
-MOMOM v0.6 ainda nao implementa IA, OpenClaw, Qwen, runtime completo de branch, renderizacao Mermaid SVG avancada ou publicacao no Marketplace. Esta etapa adiciona a primeira integracao LSP local no VS Code mantendo o nucleo deterministico intacto.
+MOMOM v0.7 ainda nao implementa IA, OpenClaw, Qwen, runtime completo de branch, Mermaid SVG avancado, document links internos dedicados ou publicacao no Marketplace. Esta etapa fortalece a experiencia do editor mantendo o nucleo deterministico intacto.
