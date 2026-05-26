@@ -1,6 +1,8 @@
 import type { GraphAst, SourceLocation } from "./ast.js";
+import { analyzeGraphFlow } from "./flowchecker.js";
 import { DiagnosticCodes, createDiagnostic, type Diagnostic } from "./diagnostics.js";
 import { isRiskLevel } from "./node-registry.js";
+import { parseReference } from "./references.js";
 import { typeCheckGraph } from "./typechecker.js";
 
 export interface ValidationResult {
@@ -126,7 +128,10 @@ export function validateGraph(graph: GraphAst): ValidationResult {
       continue;
     }
 
-    if (!inputs.has(edge.from) && !nodes.has(edge.from)) {
+    const sourceReference = parseReference(edge.from);
+    const targetReference = parseReference(edge.to);
+
+    if (!inputs.has(sourceReference.root) && !nodes.has(sourceReference.root)) {
       diagnostics.push(
         createDiagnostic(
           DiagnosticCodes.MISSING_REFERENCE,
@@ -137,7 +142,7 @@ export function validateGraph(graph: GraphAst): ValidationResult {
       );
     }
 
-    if (!nodes.has(edge.to)) {
+    if (!nodes.has(targetReference.root)) {
       diagnostics.push(
         createDiagnostic(
           DiagnosticCodes.MISSING_REFERENCE,
@@ -216,6 +221,7 @@ export function validateGraph(graph: GraphAst): ValidationResult {
   }
 
   diagnostics.push(...typeCheckGraph(graph));
+  diagnostics.push(...analyzeGraphFlow(graph).diagnostics);
 
   return {
     valid: !diagnostics.some((diagnostic) => diagnostic.severity === "error"),
@@ -231,8 +237,10 @@ function hasNodeCycle(graph: GraphAst, nodes: Set<string>): boolean {
   }
 
   for (const edge of graph.edges) {
-    if (nodes.has(edge.from) && nodes.has(edge.to)) {
-      adjacency.get(edge.from)?.push(edge.to);
+    const sourceReference = parseReference(edge.from);
+    const targetReference = parseReference(edge.to);
+    if (nodes.has(sourceReference.root) && nodes.has(targetReference.root)) {
+      adjacency.get(sourceReference.root)?.push(targetReference.root);
     }
   }
 

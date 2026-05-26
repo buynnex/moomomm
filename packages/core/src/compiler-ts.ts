@@ -1,5 +1,6 @@
 import type { GraphAst } from "./ast.js";
 import { type Diagnostic } from "./diagnostics.js";
+import type { ExecutionPlanItem } from "./flowchecker.js";
 import type { GraphIR, IRNode, IROutput } from "./ir.js";
 import { buildIR } from "./ir.js";
 import { getNodeDefinition, getNodeOutputType } from "./node-registry.js";
@@ -29,10 +30,11 @@ export function compileToTypeScript(ir: GraphIR): string {
   const nodeVariables = new Map(ir.nodes.map((node) => [node.id, toIdentifier(node.id, "node")]));
   const referencedNodeProperties = collectReferencedNodeProperties(ir);
   const customTypes = collectCustomTypes(ir);
+  const orderedNodes = getOrderedNodes(ir.nodes, ir.executionPlan);
 
   const body: string[] = [];
 
-  for (const node of ir.nodes) {
+  for (const node of orderedNodes) {
     body.push(
       ...compileNode(
         node,
@@ -44,7 +46,9 @@ export function compileToTypeScript(ir: GraphIR): string {
   }
 
   for (const branch of ir.branches) {
-    body.push(`  // TODO: Implement deterministic branch routing for ${branch.source}.`);
+    const branchTargets = branch.cases.map((branchCase) => branchCase.target).join("/");
+    body.push(`  // TODO: Branch ${branch.source} controls ${branchTargets} in Momom flow.`);
+    body.push("  // Runtime branch execution will be implemented in a future version.");
   }
 
   body.push(...compileReturnBlock(ir.outputs, inputNames, nodeVariables));
@@ -108,23 +112,33 @@ function compileNode(
         const template = typeof node.properties.template === "string" ? node.properties.template : "";
         return [
           `  const ${variableName} = {`,
-          `    text: ${renderTemplateLiteral(template, inputNames, nodeVariables)},`,
+          `    text: ${renderTemplateLiteral(template, node.inputs, inputNames, nodeVariables)},`,
           "  };",
           "",
         ];
       }
-      case "placeholder-auth":
+      case "placeholder-auth": {
+        const tokenSource = node.inputs.token?.source;
+        const tokenExpression = tokenSource
+          ? compileSourceReference(tokenSource, inputNames, nodeVariables)
+          : inputNames.has("token")
+            ? "input.token"
+            : "undefined";
         return [
           "  // TODO: Auth.VerifyToken placeholder seguro. Substituir por autenticacao real.",
           `  const ${variableName} = {`,
-          `    valid: ${inputNames.has("token") ? "Boolean(input.token)" : "false"},`,
+          `    valid: Boolean(${tokenExpression}),`,
           "  };",
           "",
         ];
+      }
       case "placeholder-recommend": {
-        const topK = typeof node.properties.topK === "number" ? node.properties.topK : 10;
-        const itemsExpression = inputNames.has("products")
-          ? `input.products.slice(0, ${topK})`
+        const topK = typeof node.properties.topK === "number" ? node.properties.topK : 5;
+        const productsSource = node.inputs.products?.source;
+        const itemsExpression = productsSource
+          ? `${compileSourceReference(productsSource, inputNames, nodeVariables)}.slice(0, ${topK})`
+          : inputNames.has("products")
+            ? `input.products.slice(0, ${topK})`
           : `[] as ${getNodeOutputType(node.type, "items") ?? "unknown[]"}`;
         return [
           "  // TODO: ML.RecommendProducts placeholder seguro. Substituir por recomendacao real.",
@@ -180,6 +194,32 @@ function compileReturnBlock(
   ];
 }
 
+function getOrderedNodes(nodes: IRNode[], executionPlan: ExecutionPlanItem[]): IRNode[] {
+  if (executionPlan.length === 0) {
+    return nodes;
+  }
+
+  const orderByNodeId = new Map(executionPlan.map((item) => [item.nodeId, item.order]));
+  return [...nodes].sort((left, right) => {
+    const leftOrder = orderByNodeId.get(left.id);
+    const rightOrder = orderByNodeId.get(right.id);
+
+    if (leftOrder === undefined && rightOrder === undefined) {
+      return 0;
+    }
+
+    if (leftOrder === undefined) {
+      return 1;
+    }
+
+    if (rightOrder === undefined) {
+      return -1;
+    }
+
+    return leftOrder - rightOrder;
+  });
+}
+
 function inferReferenceType(ir: GraphIR, reference: string): string {
   const parts = splitReference(reference);
   if (parts.length === 0) {
@@ -197,7 +237,6 @@ function inferReferenceType(ir: GraphIR, reference: string): string {
     return "unknown";
   }
 
-  const nodeDefinition = getNodeDefinition(node.type);
   if (property && node.outputs[property]) {
     return node.outputs[property];
   }
@@ -289,6 +328,7 @@ function collectCustomTypes(ir: GraphIR): string[] {
 
 function renderTemplateLiteral(
   template: string,
+  inputBindings: IRNode["inputs"],
   inputNames: Set<string>,
   nodeVariables: Map<string, string>,
 ): string {
@@ -303,7 +343,7 @@ function renderTemplateLiteral(
     result += escapeTemplateChunk(template.slice(lastIndex, start));
 
     const trimmedName = name.trim();
-    const compiledReference = compileResolvedTemplateReference(trimmedName, inputNames, nodeVariables);
+    const compiledReference = compileTemplateVariable(trimmedName, inputBindings, inputNames, nodeVariables);
     if (compiledReference) {
       result += `\${${compiledReference}}`;
     } else {
@@ -318,11 +358,17 @@ function renderTemplateLiteral(
   return `\`${result}\``;
 }
 
-function compileResolvedTemplateReference(
+function compileTemplateVariable(
   reference: string,
+  inputBindings: IRNode["inputs"],
   inputNames: Set<string>,
   nodeVariables: Map<string, string>,
 ): string | undefined {
+  const explicitBinding = inputBindings[reference];
+  if (explicitBinding) {
+    return compileSourceReference(explicitBinding.source, inputNames, nodeVariables);
+  }
+
   const [base, ...rest] = splitReference(reference);
   if (!base) {
     return undefined;
@@ -337,6 +383,14 @@ function compileResolvedTemplateReference(
   }
 
   return undefined;
+}
+
+function compileSourceReference(
+  reference: string,
+  inputNames: Set<string>,
+  nodeVariables: Map<string, string>,
+): string {
+  return compileReference(reference, inputNames, nodeVariables);
 }
 
 function escapeTemplateChunk(value: string): string {

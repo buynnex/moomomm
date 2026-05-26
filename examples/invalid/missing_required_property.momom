@@ -1,0 +1,7 @@
+graph MissingRequiredProperty {
+  node message: Text.Template {
+    intent: "Falta template"
+  }
+
+  output text: message.text
+}

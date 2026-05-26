@@ -37,6 +37,10 @@ export interface EdgeAst {
   kind: "Edge";
   from: string;
   to: string;
+  sourceRoot?: string;
+  sourcePath?: string[];
+  targetNode?: string;
+  targetPort?: string | null;
   loc?: SourceLocation;
 }
 

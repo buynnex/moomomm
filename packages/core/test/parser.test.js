@@ -48,15 +48,45 @@ describe("parser", () => {
     });
   });
 
-  it("buildIR gera kind momom.graph e version 0.3", () => {
+  it("parser le edges com portas explicitas corretamente", () => {
+    const graph = parseGraph(readExample("flow_explicit_ports.momom"));
+
+    expect(graph.edges).toContainEqual(
+      expect.objectContaining({
+        from: "token",
+        to: "verify.token",
+        sourceRoot: "token",
+        sourcePath: [],
+        targetNode: "verify",
+        targetPort: "token",
+      }),
+    );
+    expect(graph.edges).toContainEqual(
+      expect.objectContaining({
+        from: "customerName",
+        to: "message.customerName",
+        targetNode: "message",
+        targetPort: "customerName",
+      }),
+    );
+  });
+
+  it("buildIR gera kind momom.graph e version 0.4", () => {
     const ir = buildIR(parseGraph(readExample("hello.momom")));
 
     expect(ir.kind).toBe("momom.graph");
-    expect(ir.version).toBe("0.3");
+    expect(ir.version).toBe("0.4");
     expect(ir.nodes[0]).toMatchObject({
       id: "greeting",
       type: "Text.Template",
       intent: expect.any(String),
+      inputs: {
+        name: {
+          source: "name",
+          type: "string",
+          inferred: true,
+        },
+      },
       outputs: {
         text: "string",
       },

@@ -1,4 +1,5 @@
 import type { GraphAst } from "./ast.js";
+import { parseReference } from "./references.js";
 
 export function graphToMermaid(graph: GraphAst): string {
   const inputIds = new Map(graph.inputs.map((input) => [input.name, `input_${sanitizeId(input.name)}`]));
@@ -20,7 +21,13 @@ export function graphToMermaid(graph: GraphAst): string {
   }
 
   for (const edge of graph.edges) {
-    lines.push(`  ${toMermaidNodeId(edge.from, inputIds, nodeIds)} --> ${toMermaidNodeId(edge.to, inputIds, nodeIds)}`);
+    lines.push(
+      `  ${toMermaidNodeId(parseReference(edge.from).root, inputIds, nodeIds)} --> ${toMermaidNodeId(
+        parseReference(edge.to).root,
+        inputIds,
+        nodeIds,
+      )}`,
+    );
   }
 
   for (const branch of graph.branches) {
@@ -58,8 +65,7 @@ function escapeLabel(value: string): string {
 }
 
 function splitReference(reference: string): string[] {
-  return reference
-    .split(".")
-    .map((part) => part.trim())
-    .filter(Boolean);
+  return parseReference(reference).path.length > 0
+    ? [parseReference(reference).root, ...parseReference(reference).path]
+    : [parseReference(reference).root].filter(Boolean);
 }

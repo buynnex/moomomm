@@ -1,0 +1,35 @@
+graph FlowExplicitPorts {
+  input token: Token
+  input products: Product[]
+  input customerName: string
+
+  node verify: Auth.VerifyToken {
+    intent: "Verificar token"
+    risk: "critical"
+    deterministic: true
+  }
+
+  node recommend: ML.RecommendProducts {
+    intent: "Recomendar produtos"
+    risk: "medium"
+    deterministic: false
+    topK: 3
+  }
+
+  node message: Text.Template {
+    intent: "Criar mensagem final"
+    template: "Ola, {customerName}. Temos recomendacoes para voce."
+  }
+
+  edge token -> verify.token
+  edge products -> recommend.products
+  edge customerName -> message.customerName
+
+  branch verify.valid {
+    true -> recommend
+    false -> message
+  }
+
+  output items: recommend.items
+  output text: message.text
+}

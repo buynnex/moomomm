@@ -9,6 +9,7 @@ import {
   type NodeAst,
   type OutputAst,
 } from "./ast.js";
+import { parseReference } from "./references.js";
 
 export interface ParseOptions {
   file?: string;
@@ -184,16 +185,25 @@ export function parseGraph(source: string, options: ParseOptions = {}): GraphAst
   }
 
   function parseEdge(trimmed: string): EdgeAst {
-    const match = /^edge\s+([A-Za-z_][A-Za-z0-9_]*)\s*->\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/.exec(trimmed);
+    const match =
+      /^edge\s+([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*->\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*$/.exec(
+        trimmed,
+      );
     if (!match) {
       syntaxError(`Invalid edge declaration "${trimmed}"`);
     }
     const [, from, to] = match!;
+    const parsedFrom = parseReference(from);
+    const parsedTo = parseReference(to);
 
     return {
       kind: "Edge",
       from,
       to,
+      sourceRoot: parsedFrom.root,
+      sourcePath: parsedFrom.path,
+      targetNode: parsedTo.root,
+      targetPort: parsedTo.path.length > 0 ? parsedTo.path.join(".") : null,
       loc: createLocation(currentLineNumber(), 1, file),
     };
   }

@@ -1,0 +1,13 @@
+graph DuplicatePortConnection {
+  input token: Token
+  input backupToken: string
+
+  node verify: Auth.VerifyToken {
+    deterministic: true
+  }
+
+  edge token -> verify.token
+  edge backupToken -> verify.token
+
+  output valid: verify.valid
+}

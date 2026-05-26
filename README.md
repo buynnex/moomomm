@@ -1,24 +1,24 @@
 # MOMOM
 
-MOMOM e a base de uma linguagem declarativa orientada a grafo semantico. Programas sao descritos como grafos compostos por `inputs`, `nodes`, `edges`, `branches` e `outputs`, com foco em leitura humana, compilacao deterministica e evolucao segura.
+MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker e compiler deterministicos.
 
 ## O que e Momom
 
-- Uma linguagem declarativa para descrever fluxos como grafos semanticos.
-- Um nucleo deterministicamente parseavel, validavel e compilavel.
-- Uma base pensada para humanos, compiladores e futuras ferramentas de IA sem depender delas.
+- Uma linguagem para modelar fluxos como grafos semanticos.
+- Um nucleo deterministico, sem dependencia de IA em runtime.
+- Uma base preparada para humanos, compiladores e futuras ferramentas de IA.
 
 ## O que Momom nao e
 
-- Nao e um runtime dependente de IA.
+- Nao e um runtime de IA.
 - Nao e um executor autonomo de comandos externos.
-- Nao e uma DSL probabilistica no nucleo da linguagem.
+- Nao e uma DSL probabilistica no nucleo.
 
-## Garantias da v0.3
+## Garantias atuais
 
 - `momom-core` e deterministico.
-- Parser, validador e compilador funcionam sem IA.
-- IA sera apenas uma camada opcional futura.
+- Parser, validator, flow checker e compiler funcionam sem IA.
+- IA continuara como uma camada opcional futura.
 
 ## Instalar
 
@@ -33,9 +33,9 @@ npm run build
 npm test
 ```
 
-## Usar a CLI
+## CLI
 
-Depois do build, voce pode executar:
+Depois do build:
 
 ```bash
 npm run momom -- parse examples/hello.momom
@@ -45,65 +45,113 @@ npm run momom -- validate examples/hello.momom
 npm run momom -- compile examples/hello.momom --target typescript
 npm run momom -- compile examples/hello.momom --target typescript --out generated/hello.ts
 npm run momom -- graph examples/auth_recommend.momom --format mermaid
+npm run momom -- inspect examples/auth_recommend.momom --format flow
 ```
 
-## Estrutura do monorepo
+## O que a v0.4 adiciona
 
-- `packages/core`: AST, parser, diagnostics, validator, type checker semantico, IR canonica, registry de nodes, export Mermaid e compilador TypeScript.
-- `packages/cli`: interface de linha de comando.
-- `examples`: exemplos `.momom`.
-- `spec`: especificacoes da linguagem.
+- Contratos de input por node na registry.
+- Edge com porta opcional, mantendo compatibilidade com a sintaxe antiga.
+- Inferencia de portas para `edge token -> verify` e casos equivalentes.
+- Flow checker com conexoes resolvidas e plano de execucao topologico.
+- IR canonica `momom.graph` v0.4 com `executionPlan`, `nodes[].inputs` e `edges[]` enriquecidos.
+- `momom inspect --format flow`.
+- Compiler TypeScript usando conexoes resolvidas e placeholders seguros.
 
-## O que a v0.3 adiciona
+## Referencias e edges
 
-- Type checker semantico inicial.
-- IR canonica `momom.graph` v0.3 com tipos resolvidos em `outputs`.
-- Resolucao semantica de referencias `input` e `node.output`.
-- Contratos de outputs conhecidos por node na registry.
-- Validacoes novas para propriedades inexistentes, branch booleana, variaveis de template e tipos incompativeis.
-- `momom graph --format mermaid`.
-- `momom compile --out`.
-- Placeholders seguros para nodes ainda nao implementados completamente.
+Referencias semanticas:
 
-## Referencias semanticas
+- `name`
+- `greeting.text`
+- `verify.valid`
+- `recommend.items`
 
-- `name`: referencia direta a um `input`.
-- `greeting.text`: referencia ao output `text` de um `node`.
-- `verify.valid`: referencia ao output `valid` de um `node`.
+Edges continuam aceitando a forma antiga:
 
-O parser continua gerando AST deterministica, e a camada semantica da v0.3 resolve o tipo dessas referencias quando possivel.
+```momom
+edge token -> verify
+edge products -> recommend
+edge name -> greeting
+```
+
+Agora tambem aceitam portas explicitas:
+
+```momom
+edge token -> verify.token
+edge products -> recommend.products
+edge customerName -> message.customerName
+edge greeting.text -> otherNode.message
+```
+
+Em grafos maiores, portas explicitas sao a forma preferida.
 
 ## Nodes conhecidos
 
-Na registry inicial, Momom conhece os contratos de:
+Registry inicial:
 
-- `Text.Template` -> `text: string`
-- `Auth.VerifyToken` -> `valid: boolean`
-- `ML.RecommendProducts` -> `items: Product[]`
-- `Action.TriggerAnomaly` -> `triggered: boolean`
+- `Text.Template`
+  - outputs conhecidos: `text: string`
+  - portas dinamicas derivadas de `{variaveis}` no template
+- `Auth.VerifyToken`
+  - espera `token`
+  - output conhecido: `valid: boolean`
+- `ML.RecommendProducts`
+  - espera `products`
+  - output conhecido: `items: Product[]`
+- `Action.TriggerAnomaly`
+  - output conhecido: `triggered: boolean`
 
-Nodes desconhecidos nao quebram o grafo por si so, mas geram warning `MOMOM018`.
+Nodes desconhecidos nao quebram a estrutura do grafo por si so, mas geram warning `MOMOM018`.
 
 ## Text.Template
 
-`Text.Template` extrai variaveis no formato `{nome}` ou `{node.output}`.
+`Text.Template` extrai variaveis como `{customerName}` e transforma cada variavel em uma porta dinamica do node.
 
 Regras atuais:
 
 - cada variavel precisa existir
 - cada variavel precisa resolver para `string`, `number` ou `boolean`
-- tipos como `Product[]` ou referencias nao resolvidas falham na validacao
+- arrays e tipos semanticos nao simples falham na validacao de template
 
-## Diagnostics v0.3
+## Validacao e flow checker
 
-- `MOMOM013`: propriedade inexistente na referencia
-- `MOMOM014`: branch precisa usar expressao booleana
-- `MOMOM015`: variavel de template inexistente
-- `MOMOM016`: variavel de template possui tipo incompativel
-- `MOMOM017`: tipo incompativel para node
-- `MOMOM018`: node desconhecido na registry
-- `MOMOM019`: tipo nao resolvido
+O comando `validate` agora roda:
 
-## Estado atual
+1. validacoes estruturais
+2. type checker semantico
+3. flow checker
 
-Esta versao implementa a base real da linguagem Momom v0.3 sem depender de IA. Integracoes com IA, OpenClaw, extensao VS Code, Language Server e adaptadores externos continuam deliberadamente fora desta etapa.
+Se houver warnings apenas, a CLI responde com `Validation succeeded with warnings.`. Se houver erros, a validacao falha.
+
+Exemplo de falha nova:
+
+- `ML.RecommendProducts` sem `products` conectado gera `MOMOM020`
+- `edge age -> verify.token` gera `MOMOM021`
+- `edge token -> verify.password` gera `MOMOM023`
+
+## Diagnostics v0.4
+
+Novos diagnostics desta versao:
+
+- `MOMOM020`: input obrigatorio ausente no node
+- `MOMOM021`: tipo de edge incompativel com porta do node
+- `MOMOM022`: edge source nao resolvido
+- `MOMOM023`: porta de node inexistente
+- `MOMOM024`: porta de node conectada mais de uma vez
+- `MOMOM025`: propriedade obrigatoria ausente no node
+- `MOMOM026`: tipo invalido de propriedade do node
+- `MOMOM027`: nao foi possivel inferir porta do edge
+- `MOMOM028`: node possivelmente inalcancavel
+- `MOMOM029`: input declarado mas nao usado
+
+## Estrutura
+
+- `packages/core`: AST, parser, diagnostics, validator, type system, references resolver, flow checker, IR, Mermaid e compiler.
+- `packages/cli`: comandos `parse`, `validate`, `compile`, `graph` e `inspect`.
+- `examples`: grafos validos e invalidos.
+- `spec`: especificacoes da linguagem.
+
+## Estado do projeto
+
+MOMOM v0.4 ainda nao implementa IA, OpenClaw, Qwen, extensao VS Code, Language Server ou publicacao npm. Esta etapa prepara a base deterministica da linguagem para essas camadas futuras sem depender delas agora.

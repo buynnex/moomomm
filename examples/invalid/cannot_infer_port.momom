@@ -1,0 +1,11 @@
+graph CannotInferPort {
+  input token: Token
+
+  node anomaly: Action.TriggerAnomaly {
+    deterministic: true
+  }
+
+  edge token -> anomaly
+
+  output triggered: anomaly.triggered
+}

@@ -43,6 +43,16 @@ describe("compiler-ts", () => {
     expect(output).toContain("triggered: true");
   });
 
+  it("compiler usa a porta token resolvida em Auth.VerifyToken", () => {
+    const output = compileToTypeScript(buildIR(parseGraph(readExample("auth_recommend.momom"))));
+    expect(output).toContain("valid: Boolean(input.token)");
+  });
+
+  it("compiler usa a porta products resolvida em ML.RecommendProducts", () => {
+    const output = compileToTypeScript(buildIR(parseGraph(readExample("auth_recommend.momom"))));
+    expect(output).toContain("items: input.products.slice(0, 5)");
+  });
+
   it("nao usa eval nem Function constructor", () => {
     const output = compileToTypeScript(buildIR(parseGraph(readExample("auth_recommend.momom"))));
 
@@ -68,6 +78,17 @@ describe("compiler-ts", () => {
     expect(output).toContain("text: message.text");
   });
 
+  it("compiler usa conexoes resolvidas em Text.Template", () => {
+    const output = compileToTypeScript(buildIR(parseGraph(readExample("flow_explicit_ports.momom"))));
+    expect(output).toContain("text: `Ola, ${input.customerName}. Temos recomendacoes para voce.`");
+  });
+
+  it("compiler gera comentario TODO para branches", () => {
+    const output = compileToTypeScript(buildIR(parseGraph(readExample("auth_recommend.momom"))));
+    expect(output).toContain("// TODO: Branch verify.valid controls recommend/block in Momom flow.");
+    expect(output).toContain("// Runtime branch execution will be implemented in a future version.");
+  });
+
   it("compiler falha de forma controlada quando output property nao existe", () => {
     const graph = parseGraph(readInvalidExample("missing_output_property.momom"));
 
@@ -79,6 +100,34 @@ describe("compiler-ts", () => {
       expect(error).toBeInstanceOf(CompilerDiagnosticError);
       expect(error.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
         DiagnosticCodes.INVALID_REFERENCE_PROPERTY,
+      );
+    }
+  });
+
+  it("compiler falha se missing_required_node_input", () => {
+    const graph = parseGraph(readInvalidExample("missing_required_node_input.momom"));
+    expect(() => compileGraphToTypeScript(graph)).toThrow(CompilerDiagnosticError);
+
+    try {
+      compileGraphToTypeScript(graph);
+    } catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError);
+      expect(error.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
+        DiagnosticCodes.MISSING_REQUIRED_NODE_INPUT,
+      );
+    }
+  });
+
+  it("compiler falha se incompatible_edge_type", () => {
+    const graph = parseGraph(readInvalidExample("incompatible_edge_type.momom"));
+    expect(() => compileGraphToTypeScript(graph)).toThrow(CompilerDiagnosticError);
+
+    try {
+      compileGraphToTypeScript(graph);
+    } catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError);
+      expect(error.diagnostics.map((diagnostic) => diagnostic.code)).toContain(
+        DiagnosticCodes.INCOMPATIBLE_EDGE_TYPE,
       );
     }
   });

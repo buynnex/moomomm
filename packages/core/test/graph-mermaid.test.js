@@ -19,4 +19,15 @@ describe("graph mermaid", () => {
     expect(mermaid).toContain('verify -->|"true"| recommend');
     expect(mermaid).toContain('verify -->|"false"| block');
   });
+
+  it("gera edges com portas explicitas usando os nodes corretos", () => {
+    const mermaid = graphToMermaid(parseGraph(readExample("flow_explicit_ports.momom")));
+
+    expect(mermaid).toContain("flowchart TD");
+    expect(mermaid).toContain("input_token --> verify");
+    expect(mermaid).toContain("input_products --> recommend");
+    expect(mermaid).toContain("input_customerName --> message");
+    expect(mermaid).toContain('verify -->|"true"| recommend');
+    expect(mermaid).toContain('verify -->|"false"| message');
+  });
 });

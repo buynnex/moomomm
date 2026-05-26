@@ -1,6 +1,7 @@
 export * from "./ast.js";
 export * from "./compiler-ts.js";
 export * from "./diagnostics.js";
+export * from "./flowchecker.js";
 export * from "./graph-mermaid.js";
 export * from "./ir.js";
 export * from "./node-registry.js";

@@ -23,6 +23,12 @@ describe("validator", () => {
     expect(result.diagnostics).toEqual([]);
   });
 
+  it("validator aceita FlowExplicitPorts", () => {
+    const result = validateGraph(parseGraph(readExample("flow_explicit_ports.momom")));
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+  });
+
   it("validator rejeita node critical com deterministic false", () => {
     const result = validateGraph(parseGraph(readInvalidExample("critical_probabilistic.momom")));
     expect(result.valid).toBe(false);

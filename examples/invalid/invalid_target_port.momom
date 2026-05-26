@@ -1,0 +1,11 @@
+graph InvalidTargetPort {
+  input token: Token
+
+  node verify: Auth.VerifyToken {
+    deterministic: true
+  }
+
+  edge token -> verify.password
+
+  output valid: verify.valid
+}

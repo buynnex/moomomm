@@ -3,10 +3,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import {
+  analyzeGraphFlow,
   buildIR,
   CompilerDiagnosticError,
   compileGraphToTypeScript,
-  compileToTypeScript,
   formatDiagnostic,
   graphToMermaid,
   parseGraph,
@@ -60,6 +60,17 @@ function main(argv: string[]): number {
     }
 
     console.log(graphToMermaid(graph));
+    return 0;
+  }
+
+  if (command === "inspect") {
+    const format = readOption(rest, "--format") ?? "flow";
+    if (format !== "flow") {
+      console.error('Formato invalido. Use "--format flow".');
+      return 1;
+    }
+
+    console.log(JSON.stringify(analyzeGraphFlow(graph), null, 2));
     return 0;
   }
 
@@ -132,7 +143,8 @@ momom parse <arquivo.momom> --format ast
 momom parse <arquivo.momom> --format ir
 momom validate <arquivo.momom>
 momom compile <arquivo.momom> --target typescript [--out caminho/arquivo.ts]
-momom graph <arquivo.momom> --format mermaid`);
+momom graph <arquivo.momom> --format mermaid
+momom inspect <arquivo.momom> --format flow`);
 }
 
 try {

@@ -1,0 +1,7 @@
+graph MissingRequiredNodeInput {
+  node recommend: ML.RecommendProducts {
+    topK: 5
+  }
+
+  output result: recommend.items
+}

@@ -1,0 +1,11 @@
+graph IncompatibleEdgeType {
+  input age: number
+
+  node verify: Auth.VerifyToken {
+    deterministic: true
+  }
+
+  edge age -> verify.token
+
+  output valid: verify.valid
+}

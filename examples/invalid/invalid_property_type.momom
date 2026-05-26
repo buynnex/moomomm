@@ -1,0 +1,11 @@
+graph InvalidPropertyType {
+  input products: Product[]
+
+  node recommend: ML.RecommendProducts {
+    topK: "cinco"
+  }
+
+  edge products -> recommend.products
+
+  output result: recommend.items
+}
