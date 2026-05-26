@@ -1,0 +1,21 @@
+graph BranchNonBoolean {
+  input name: string
+
+  node message: Text.Template {
+    intent: "Criar mensagem"
+    template: "Ola, {name}"
+  }
+
+  node fallback: Action.TriggerAnomaly {
+    intent: "Fluxo alternativo"
+    deterministic: true
+  }
+
+  edge name -> message
+
+  branch message.text {
+    true -> fallback
+  }
+
+  output result: message.text
+}

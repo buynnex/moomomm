@@ -1,0 +1,5 @@
+graph MissingOutputReference {
+  input name: string
+
+  output result: missingNode.text
+}

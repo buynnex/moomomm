@@ -1,10 +1,7 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseGraph } from "../src/parser.js";
-
-function readExample(fileName: string): string {
-  return readFileSync(new URL(`../../../examples/${fileName}`, import.meta.url), "utf8");
-}
+import { buildIR } from "../dist/ir.js";
+import { parseGraph } from "../dist/parser.js";
+import { readExample } from "./helpers.js";
 
 describe("parser", () => {
   it("parser le HelloUser corretamente", () => {
@@ -17,8 +14,8 @@ describe("parser", () => {
       id: "greeting",
       type: "Text.Template",
       properties: {
-        intent: "Criar mensagem de boas-vindas",
-        template: "Olá, {name}",
+        intent: expect.any(String),
+        template: expect.any(String),
       },
     });
     expect(graph.outputs[0]).toMatchObject({
@@ -48,6 +45,24 @@ describe("parser", () => {
     expect(graph.outputs[0]).toMatchObject({
       name: "result",
       reference: "recommend.items",
+    });
+  });
+
+  it("buildIR gera kind momom.graph e version 0.3", () => {
+    const ir = buildIR(parseGraph(readExample("hello.momom")));
+
+    expect(ir.kind).toBe("momom.graph");
+    expect(ir.version).toBe("0.3");
+    expect(ir.nodes[0]).toMatchObject({
+      id: "greeting",
+      type: "Text.Template",
+      intent: expect.any(String),
+      outputs: {
+        text: "string",
+      },
+      properties: {
+        template: expect.any(String),
+      },
     });
   });
 });

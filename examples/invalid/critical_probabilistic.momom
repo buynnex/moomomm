@@ -1,0 +1,6 @@
+graph CriticalProbabilistic {
+  node risky: Security.Decision {
+    risk: "critical"
+    deterministic: false
+  }
+}

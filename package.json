@@ -1,6 +1,6 @@
 {
   "name": "momom",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -10,8 +10,8 @@
     "build:core": "npm --workspace @momom/core run build",
     "build:cli": "npm --workspace @momom/cli run build",
     "build": "npm run build:core && npm run build:cli",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "npm run build && node --require ./vitest-sandbox.cjs ./node_modules/vitest/vitest.mjs run --pool threads --poolOptions.threads.singleThread --no-file-parallelism",
+    "test:watch": "node --require ./vitest-sandbox.cjs ./node_modules/vitest/vitest.mjs --pool threads --poolOptions.threads.singleThread --no-file-parallelism",
     "momom": "node ./packages/cli/dist/index.js"
   },
   "devDependencies": {

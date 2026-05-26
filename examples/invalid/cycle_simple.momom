@@ -1,0 +1,12 @@
+graph CycleSimple {
+  node a: Action.TriggerAnomaly {
+    deterministic: true
+  }
+
+  node b: Action.TriggerAnomaly {
+    deterministic: true
+  }
+
+  edge a -> b
+  edge b -> a
+}

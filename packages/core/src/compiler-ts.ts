@@ -1,4 +1,25 @@
+import type { GraphAst } from "./ast.js";
+import { type Diagnostic } from "./diagnostics.js";
 import type { GraphIR, IRNode, IROutput } from "./ir.js";
+import { buildIR } from "./ir.js";
+import { getNodeDefinition, getNodeOutputType } from "./node-registry.js";
+import { validateGraph } from "./validator.js";
+
+export class CompilerDiagnosticError extends Error {
+  constructor(readonly diagnostics: Diagnostic[]) {
+    super("Compilation failed due to diagnostics.");
+    this.name = "CompilerDiagnosticError";
+  }
+}
+
+export function compileGraphToTypeScript(graph: GraphAst): string {
+  const validation = validateGraph(graph);
+  if (!validation.valid) {
+    throw new CompilerDiagnosticError(validation.diagnostics.filter((diagnostic) => diagnostic.severity === "error"));
+  }
+
+  return compileToTypeScript(buildIR(graph));
+}
 
 export function compileToTypeScript(ir: GraphIR): string {
   const graphName = toIdentifier(ir.name, "Graph");
@@ -7,6 +28,7 @@ export function compileToTypeScript(ir: GraphIR): string {
   const inputNames = new Set(ir.inputs.map((input) => input.name));
   const nodeVariables = new Map(ir.nodes.map((node) => [node.id, toIdentifier(node.id, "node")]));
   const referencedNodeProperties = collectReferencedNodeProperties(ir);
+  const customTypes = collectCustomTypes(ir);
 
   const body: string[] = [];
 
@@ -27,7 +49,13 @@ export function compileToTypeScript(ir: GraphIR): string {
 
   body.push(...compileReturnBlock(ir.outputs, inputNames, nodeVariables));
 
-  return [
+  const sections: string[] = [];
+
+  if (customTypes.length > 0) {
+    sections.push(...customTypes.map((typeName) => `export type ${typeName} = unknown;`), "");
+  }
+
+  sections.push(
     renderTypeAlias(
       inputTypeName,
       ir.inputs.map((input) => ({
@@ -40,7 +68,7 @@ export function compileToTypeScript(ir: GraphIR): string {
       outputTypeName,
       ir.outputs.map((output) => ({
         key: output.name,
-        type: inferReferenceType(ir, output.reference),
+        type: output.type ?? inferReferenceType(ir, output.reference),
       })),
     ),
     "",
@@ -48,7 +76,9 @@ export function compileToTypeScript(ir: GraphIR): string {
     ...body,
     "}",
     "",
-  ].join("\n");
+  );
+
+  return sections.join("\n");
 }
 
 function renderTypeAlias(name: string, fields: Array<{ key: string; type: string }>): string {
@@ -70,15 +100,49 @@ function compileNode(
   referencedProperties: Set<string>,
 ): string[] {
   const variableName = nodeVariables.get(node.id) ?? toIdentifier(node.id, "node");
+  const nodeDefinition = getNodeDefinition(node.type);
 
-  if (node.type === "Text.Template") {
-    const template = typeof node.properties.template === "string" ? node.properties.template : "";
-    return [
-      `  const ${variableName} = {`,
-      `    text: ${renderTemplateLiteral(template, inputNames)},`,
-      "  };",
-      "",
-    ];
+  if (nodeDefinition) {
+    switch (nodeDefinition.compileStrategy) {
+      case "template": {
+        const template = typeof node.properties.template === "string" ? node.properties.template : "";
+        return [
+          `  const ${variableName} = {`,
+          `    text: ${renderTemplateLiteral(template, inputNames, nodeVariables)},`,
+          "  };",
+          "",
+        ];
+      }
+      case "placeholder-auth":
+        return [
+          "  // TODO: Auth.VerifyToken placeholder seguro. Substituir por autenticacao real.",
+          `  const ${variableName} = {`,
+          `    valid: ${inputNames.has("token") ? "Boolean(input.token)" : "false"},`,
+          "  };",
+          "",
+        ];
+      case "placeholder-recommend": {
+        const topK = typeof node.properties.topK === "number" ? node.properties.topK : 10;
+        const itemsExpression = inputNames.has("products")
+          ? `input.products.slice(0, ${topK})`
+          : `[] as ${getNodeOutputType(node.type, "items") ?? "unknown[]"}`;
+        return [
+          "  // TODO: ML.RecommendProducts placeholder seguro. Substituir por recomendacao real.",
+          `  const ${variableName} = {`,
+          `    items: ${itemsExpression},`,
+          "  };",
+          "",
+        ];
+      }
+      case "placeholder-action":
+        return [
+          "  // TODO: Action.TriggerAnomaly placeholder seguro.",
+          `  const ${variableName} = {`,
+          "    triggered: true,",
+          "  };",
+          "",
+        ];
+    }
   }
 
   const properties = [...referencedProperties].sort();
@@ -133,8 +197,16 @@ function inferReferenceType(ir: GraphIR, reference: string): string {
     return "unknown";
   }
 
-  if (node.type === "Text.Template" && property === "text") {
-    return "string";
+  const nodeDefinition = getNodeDefinition(node.type);
+  if (property && node.outputs[property]) {
+    return node.outputs[property];
+  }
+
+  if (!property) {
+    const outputTypes = Object.values(node.outputs);
+    if (outputTypes.length === 1) {
+      return outputTypes[0];
+    }
   }
 
   return "unknown";
@@ -185,8 +257,42 @@ function collectReferencedNodeProperties(ir: GraphIR): Map<string, Set<string>> 
   return references;
 }
 
-function renderTemplateLiteral(template: string, inputNames: Set<string>): string {
-  const pattern = /\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+function collectCustomTypes(ir: GraphIR): string[] {
+  const customTypes: string[] = [];
+  const seenTypes = new Set<string>();
+
+  const registerType = (typeAnnotation: string): void => {
+    for (const customType of extractCustomTypes(typeAnnotation)) {
+      if (!seenTypes.has(customType)) {
+        seenTypes.add(customType);
+        customTypes.push(customType);
+      }
+    }
+  };
+
+  for (const input of ir.inputs) {
+    registerType(input.type);
+  }
+
+  for (const output of ir.outputs) {
+    registerType(output.type ?? inferReferenceType(ir, output.reference));
+  }
+
+  for (const node of ir.nodes) {
+    for (const outputType of Object.values(node.outputs)) {
+      registerType(outputType);
+    }
+  }
+
+  return customTypes;
+}
+
+function renderTemplateLiteral(
+  template: string,
+  inputNames: Set<string>,
+  nodeVariables: Map<string, string>,
+): string {
+  const pattern = /\{([^{}]+)\}/g;
   let result = "";
   let lastIndex = 0;
   let match = pattern.exec(template);
@@ -196,8 +302,10 @@ function renderTemplateLiteral(template: string, inputNames: Set<string>): strin
     const start = match.index;
     result += escapeTemplateChunk(template.slice(lastIndex, start));
 
-    if (inputNames.has(name)) {
-      result += `\${${compileAccess("input", [name])}}`;
+    const trimmedName = name.trim();
+    const compiledReference = compileResolvedTemplateReference(trimmedName, inputNames, nodeVariables);
+    if (compiledReference) {
+      result += `\${${compiledReference}}`;
     } else {
       result += escapeTemplateChunk(rawMatch);
     }
@@ -208,6 +316,27 @@ function renderTemplateLiteral(template: string, inputNames: Set<string>): strin
 
   result += escapeTemplateChunk(template.slice(lastIndex));
   return `\`${result}\``;
+}
+
+function compileResolvedTemplateReference(
+  reference: string,
+  inputNames: Set<string>,
+  nodeVariables: Map<string, string>,
+): string | undefined {
+  const [base, ...rest] = splitReference(reference);
+  if (!base) {
+    return undefined;
+  }
+
+  if (inputNames.has(base)) {
+    return compileAccess("input", [base, ...rest]);
+  }
+
+  if (nodeVariables.has(base)) {
+    return compileAccess(nodeVariables.get(base) ?? base, rest);
+  }
+
+  return undefined;
 }
 
 function escapeTemplateChunk(value: string): string {
@@ -226,6 +355,13 @@ function compileAccess(base: string, segments: string[]): string {
 
 function toTypeAnnotation(typeName: string): string {
   return typeName.trim() || "unknown";
+}
+
+function extractCustomTypes(typeName: string): string[] {
+  const normalizedType = toTypeAnnotation(typeName);
+  const matches = normalizedType.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? [];
+
+  return matches.filter((match) => !isBuiltinType(match));
 }
 
 function formatObjectKey(key: string): string {
@@ -247,6 +383,10 @@ function toIdentifier(value: string, fallback: string): string {
 
 function isValidIdentifier(value: string): boolean {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value);
+}
+
+function isBuiltinType(value: string): boolean {
+  return new Set(["string", "number", "boolean", "unknown", "any", "void"]).has(value);
 }
 
 function splitReference(reference: string): string[] {

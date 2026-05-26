@@ -1,0 +1,12 @@
+graph TemplateMissingVariable {
+  input customerName: string
+
+  node message: Text.Template {
+    intent: "Criar mensagem"
+    template: "Ola, {clientName}"
+  }
+
+  edge customerName -> message
+
+  output text: message.text
+}

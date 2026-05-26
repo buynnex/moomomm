@@ -1,0 +1,16 @@
+graph CustomerOffer {
+  input customerName: string
+  input productName: string
+  input offerValue: number
+
+  node message: Text.Template {
+    intent: "Criar mensagem de oferta para cliente"
+    template: "Ola, {customerName}. Recebemos sua oferta de {offerValue} no produto {productName}."
+  }
+
+  edge customerName -> message
+  edge productName -> message
+  edge offerValue -> message
+
+  output text: message.text
+}

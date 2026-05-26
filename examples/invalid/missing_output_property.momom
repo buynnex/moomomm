@@ -1,0 +1,12 @@
+graph MissingOutputProperty {
+  input name: string
+
+  node greeting: Text.Template {
+    intent: "Criar saudacao"
+    template: "Ola, {name}"
+  }
+
+  edge name -> greeting
+
+  output result: greeting.invalidField
+}

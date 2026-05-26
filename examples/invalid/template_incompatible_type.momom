@@ -1,0 +1,12 @@
+graph TemplateIncompatibleType {
+  input products: Product[]
+
+  node message: Text.Template {
+    intent: "Criar mensagem"
+    template: "Produtos: {products}"
+  }
+
+  edge products -> message
+
+  output text: message.text
+}
