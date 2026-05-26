@@ -1,0 +1,81 @@
+{
+  "name": "@momom/vscode-extension",
+  "displayName": "Momom Language Support",
+  "description": "Basic VS Code support for the Momom semantic graph language.",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "momom",
+        "aliases": [
+          "Momom",
+          "momom"
+        ],
+        "extensions": [
+          ".momom"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "momom",
+        "scopeName": "source.momom",
+        "path": "./syntaxes/momom.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "momom.validateCurrentFile",
+        "title": "Momom: Validate Current File"
+      },
+      {
+        "command": "momom.showIR",
+        "title": "Momom: Show IR"
+      },
+      {
+        "command": "momom.showFlow",
+        "title": "Momom: Show Flow"
+      },
+      {
+        "command": "momom.previewGraph",
+        "title": "Momom: Preview Graph"
+      },
+      {
+        "command": "momom.compileCurrentFile",
+        "title": "Momom: Compile Current File to TypeScript"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onLanguage:momom",
+    "onCommand:momom.validateCurrentFile",
+    "onCommand:momom.showIR",
+    "onCommand:momom.showFlow",
+    "onCommand:momom.previewGraph",
+    "onCommand:momom.compileCurrentFile"
+  ],
+  "files": [
+    "dist",
+    "language-configuration.json",
+    "syntaxes",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -w -p tsconfig.json"
+  },
+  "dependencies": {
+    "@momom/core": "file:../core"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.6.3"
+  }
+}

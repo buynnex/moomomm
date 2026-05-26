@@ -1,6 +1,6 @@
 # MOMOM
 
-MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker e compiler deterministicos.
+MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker, flow checker e compiler deterministicos.
 
 ## O que e Momom
 
@@ -17,8 +17,8 @@ MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao desc
 ## Garantias atuais
 
 - `momom-core` e deterministico.
-- Parser, validator, flow checker e compiler funcionam sem IA.
-- IA continuara como uma camada opcional futura.
+- Parser, validator, type checker, flow checker e compiler funcionam sem IA.
+- IA continuara como camada opcional futura.
 
 ## Instalar
 
@@ -48,15 +48,14 @@ npm run momom -- graph examples/auth_recommend.momom --format mermaid
 npm run momom -- inspect examples/auth_recommend.momom --format flow
 ```
 
-## O que a v0.4 adiciona
+## O que a v0.5 adiciona
 
-- Contratos de input por node na registry.
-- Edge com porta opcional, mantendo compatibilidade com a sintaxe antiga.
-- Inferencia de portas para `edge token -> verify` e casos equivalentes.
-- Flow checker com conexoes resolvidas e plano de execucao topologico.
-- IR canonica `momom.graph` v0.4 com `executionPlan`, `nodes[].inputs` e `edges[]` enriquecidos.
-- `momom inspect --format flow`.
-- Compiler TypeScript usando conexoes resolvidas e placeholders seguros.
+- Extensao experimental do VS Code em `packages/vscode-extension`.
+- Reconhecimento de arquivos `.momom`.
+- Syntax highlighting basico e configuracao de linguagem.
+- Diagnostics no editor usando `momom-core` diretamente.
+- Comandos para validate, show IR, show flow, preview graph e compile current file.
+- Preview offline sem CDN.
 
 ## Referencias e edges
 
@@ -88,8 +87,6 @@ Em grafos maiores, portas explicitas sao a forma preferida.
 
 ## Nodes conhecidos
 
-Registry inicial:
-
 - `Text.Template`
   - outputs conhecidos: `text: string`
   - portas dinamicas derivadas de `{variaveis}` no template
@@ -104,19 +101,9 @@ Registry inicial:
 
 Nodes desconhecidos nao quebram a estrutura do grafo por si so, mas geram warning `MOMOM018`.
 
-## Text.Template
-
-`Text.Template` extrai variaveis como `{customerName}` e transforma cada variavel em uma porta dinamica do node.
-
-Regras atuais:
-
-- cada variavel precisa existir
-- cada variavel precisa resolver para `string`, `number` ou `boolean`
-- arrays e tipos semanticos nao simples falham na validacao de template
-
 ## Validacao e flow checker
 
-O comando `validate` agora roda:
+O comando `validate` roda:
 
 1. validacoes estruturais
 2. type checker semantico
@@ -124,34 +111,45 @@ O comando `validate` agora roda:
 
 Se houver warnings apenas, a CLI responde com `Validation succeeded with warnings.`. Se houver erros, a validacao falha.
 
-Exemplo de falha nova:
+## VS Code Extension Experimental
 
-- `ML.RecommendProducts` sem `products` conectado gera `MOMOM020`
-- `edge age -> verify.token` gera `MOMOM021`
-- `edge token -> verify.password` gera `MOMOM023`
+Build da extensao:
 
-## Diagnostics v0.4
+```bash
+npm run build:vscode
+```
 
-Novos diagnostics desta versao:
+Como testar manualmente:
 
-- `MOMOM020`: input obrigatorio ausente no node
-- `MOMOM021`: tipo de edge incompativel com porta do node
-- `MOMOM022`: edge source nao resolvido
-- `MOMOM023`: porta de node inexistente
-- `MOMOM024`: porta de node conectada mais de uma vez
-- `MOMOM025`: propriedade obrigatoria ausente no node
-- `MOMOM026`: tipo invalido de propriedade do node
-- `MOMOM027`: nao foi possivel inferir porta do edge
-- `MOMOM028`: node possivelmente inalcancavel
-- `MOMOM029`: input declarado mas nao usado
+1. Abrir o repositorio no VS Code.
+2. Ir para Run and Debug.
+3. Escolher `Run Momom VS Code Extension`.
+4. Abrir `examples/hello.momom`.
+5. Rodar no Command Palette:
+   - `Momom: Validate Current File`
+   - `Momom: Show IR`
+   - `Momom: Show Flow`
+   - `Momom: Preview Graph`
+   - `Momom: Compile Current File to TypeScript`
+
+Estado atual da extensao:
+
+- experimental
+- sem Language Server
+- sem autocomplete avancado
+- sem semantic tokens
+- sem IA
+- diagnostics usam `momom-core` diretamente
+- preview e offline e nao usa CDN
 
 ## Estrutura
 
 - `packages/core`: AST, parser, diagnostics, validator, type system, references resolver, flow checker, IR, Mermaid e compiler.
 - `packages/cli`: comandos `parse`, `validate`, `compile`, `graph` e `inspect`.
+- `packages/vscode-extension`: extensao experimental do VS Code.
 - `examples`: grafos validos e invalidos.
 - `spec`: especificacoes da linguagem.
 
 ## Estado do projeto
 
-MOMOM v0.4 ainda nao implementa IA, OpenClaw, Qwen, extensao VS Code, Language Server ou publicacao npm. Esta etapa prepara a base deterministica da linguagem para essas camadas futuras sem depender delas agora.
+MOMOM v0.5 ainda nao implementa IA, OpenClaw, Qwen, Language Server, autocomplete avancado ou publicacao no Marketplace. Esta etapa prepara a primeira integracao local com VS Code mantendo o nucleo deterministico intacto.

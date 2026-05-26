@@ -1,0 +1,120 @@
+{
+  "name": "Momom",
+  "scopeName": "source.momom",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.momom",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.momom",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.momom",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.momom",
+          "match": "\\b\\d+(?:\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.momom",
+          "match": "\\b(?:graph|input|node|edge|branch|output|true|false)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.momom",
+          "match": "\\b(?:string|number|boolean|unknown|any|void|User|Token|Product)(?:\\[\\])?\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arrow.momom",
+          "match": "->"
+        },
+        {
+          "name": "punctuation.separator.key-value.momom",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.accessor.momom",
+          "match": "\\."
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.block.begin.momom",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.block.end.momom",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.section.array.begin.momom",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.array.end.momom",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.section.group.begin.momom",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.group.end.momom",
+          "match": "\\)"
+        }
+      ]
+    }
+  }
+}
