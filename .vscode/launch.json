@@ -10,9 +10,10 @@
         "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
       ],
       "outFiles": [
+        "${workspaceFolder}/packages/language-server/dist/**/*.js",
         "${workspaceFolder}/packages/vscode-extension/dist/**/*.js"
       ],
-      "preLaunchTask": "npm: build:vscode"
+      "preLaunchTask": "npm: build"
     }
   ]
 }

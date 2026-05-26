@@ -1,18 +1,27 @@
+import path from "node:path";
 import * as vscode from "vscode";
+import {
+  LanguageClient,
+  TransportKind,
+  type LanguageClientOptions,
+  type ServerOptions,
+} from "vscode-languageclient/node.js";
 import { registerMomomCommands } from "./commands.js";
 import { MomomDiagnostics } from "./diagnostics.js";
 import { MomomVirtualDocumentProvider } from "./preview.js";
-import { isMomomDocument } from "./utils.js";
 
-export function activate(context: vscode.ExtensionContext): void {
-  const diagnosticCollection = vscode.languages.createDiagnosticCollection("momom");
-  const diagnostics = new MomomDiagnostics(diagnosticCollection);
+let client: LanguageClient | undefined;
+
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  const diagnostics = new MomomDiagnostics();
   const previewProvider = new MomomVirtualDocumentProvider();
+  const fileWatcher = vscode.workspace.createFileSystemWatcher("**/*.momom");
+  client = createLanguageClient(context, fileWatcher);
 
   context.subscriptions.push(
-    diagnosticCollection,
     diagnostics,
     previewProvider,
+    fileWatcher,
     vscode.workspace.registerTextDocumentContentProvider("momom-preview", previewProvider),
   );
 
@@ -21,36 +30,44 @@ export function activate(context: vscode.ExtensionContext): void {
     previewProvider,
   });
 
-  for (const document of vscode.workspace.textDocuments) {
-    if (isMomomDocument(document)) {
-      void diagnostics.validateDocument(document);
-    }
-  }
-
-  context.subscriptions.push(
-    vscode.workspace.onDidOpenTextDocument((document) => {
-      if (isMomomDocument(document)) {
-        void diagnostics.validateDocument(document);
-      }
-    }),
-    vscode.workspace.onDidCloseTextDocument((document) => {
-      if (isMomomDocument(document)) {
-        diagnostics.clearDocument(document);
-      }
-    }),
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      if (isMomomDocument(document)) {
-        void diagnostics.validateDocument(document);
-      }
-    }),
-    vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.contentChanges.length === 0 || !isMomomDocument(event.document)) {
-        return;
-      }
-
-      diagnostics.scheduleValidation(event.document, 350);
-    }),
-  );
+  await client.start();
 }
 
-export function deactivate(): void {}
+export async function deactivate(): Promise<void> {
+  if (client) {
+    await client.stop();
+    client = undefined;
+  }
+}
+
+function createLanguageClient(
+  context: vscode.ExtensionContext,
+  fileWatcher: vscode.FileSystemWatcher,
+): LanguageClient {
+  const serverModule = path.resolve(context.extensionPath, "..", "language-server", "dist", "server.js");
+  const serverOptions: ServerOptions = {
+    run: {
+      module: serverModule,
+      transport: TransportKind.ipc,
+    },
+    debug: {
+      module: serverModule,
+      transport: TransportKind.ipc,
+      options: {
+        execArgv: ["--nolazy", "--inspect=6010"],
+      },
+    },
+  };
+
+  const clientOptions: LanguageClientOptions = {
+    documentSelector: [
+      { scheme: "file", language: "momom" },
+      { scheme: "untitled", language: "momom" },
+    ],
+    synchronize: {
+      fileEvents: fileWatcher,
+    },
+  };
+
+  return new LanguageClient("momomLanguageServer", "Momom Language Server", serverOptions, clientOptions);
+}

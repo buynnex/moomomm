@@ -1,6 +1,6 @@
 # MOMOM
 
-MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker, flow checker e compiler deterministicos.
+MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao descritos como grafos com `inputs`, `nodes`, `edges`, `branches` e `outputs`, com parser, validator, type checker, flow checker, compiler deterministicos e suporte basico de Language Server no VS Code.
 
 ## O que e Momom
 
@@ -25,6 +25,9 @@ MOMOM e uma linguagem declarativa baseada em grafo semantico. Programas sao desc
 ```bash
 npm install
 npm run build
+npm test
+npm run build:language-server
+npm run build:vscode
 ```
 
 ## Rodar testes
@@ -56,6 +59,28 @@ npm run momom -- inspect examples/auth_recommend.momom --format flow
 - Diagnostics no editor usando `momom-core` diretamente.
 - Comandos para validate, show IR, show flow, preview graph e compile current file.
 - Preview offline sem CDN.
+
+## Momom v0.6 Language Server
+
+O MOMOM v0.6 adiciona um Language Server basico em `packages/language-server` e faz a extensao VS Code usar esse servidor para recursos de edicao em tempo real.
+
+Recursos da v0.6:
+
+- diagnostics em tempo real via LSP
+- completion basico para keywords, tipos nativos, node types, risk values e propriedades comuns
+- completion contextual de portas e outputs conhecidos quando o contexto permite
+- hover basico para keywords, node types, node ids, inputs, outputs conhecidos, `risk` e `deterministic`
+- document symbols para Outline
+- comandos da v0.5 continuam funcionando
+
+Builds principais:
+
+```bash
+npm run build
+npm test
+npm run build:language-server
+npm run build:vscode
+```
 
 ## Referencias e edges
 
@@ -125,7 +150,12 @@ Como testar manualmente:
 2. Ir para Run and Debug.
 3. Escolher `Run Momom VS Code Extension`.
 4. Abrir `examples/hello.momom`.
-5. Rodar no Command Palette:
+5. Testar no editor:
+   - erros em tempo real
+   - `Ctrl+Space` para autocomplete
+   - hover sobre `Text.Template`
+   - Outline com graph, inputs, nodes e outputs
+6. Rodar no Command Palette:
    - `Momom: Validate Current File`
    - `Momom: Show IR`
    - `Momom: Show Flow`
@@ -135,21 +165,22 @@ Como testar manualmente:
 Estado atual da extensao:
 
 - experimental
-- sem Language Server
-- sem autocomplete avancado
+- usa Language Server local e offline
+- autocomplete ainda basico
 - sem semantic tokens
 - sem IA
-- diagnostics usam `momom-core` diretamente
+- diagnostics automaticos vem do LSP e reutilizam `momom-core`
 - preview e offline e nao usa CDN
 
 ## Estrutura
 
 - `packages/core`: AST, parser, diagnostics, validator, type system, references resolver, flow checker, IR, Mermaid e compiler.
 - `packages/cli`: comandos `parse`, `validate`, `compile`, `graph` e `inspect`.
+- `packages/language-server`: servidor LSP basico para diagnostics, completion, hover e symbols.
 - `packages/vscode-extension`: extensao experimental do VS Code.
 - `examples`: grafos validos e invalidos.
 - `spec`: especificacoes da linguagem.
 
 ## Estado do projeto
 
-MOMOM v0.5 ainda nao implementa IA, OpenClaw, Qwen, Language Server, autocomplete avancado ou publicacao no Marketplace. Esta etapa prepara a primeira integracao local com VS Code mantendo o nucleo deterministico intacto.
+MOMOM v0.6 ainda nao implementa IA, OpenClaw, Qwen, runtime completo de branch, renderizacao Mermaid SVG avancada ou publicacao no Marketplace. Esta etapa adiciona a primeira integracao LSP local no VS Code mantendo o nucleo deterministico intacto.

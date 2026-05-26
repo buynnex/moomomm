@@ -12,7 +12,7 @@ export interface ValidationSummary {
 export class MomomDiagnostics implements vscode.Disposable {
   private readonly timers = new Map<string, NodeJS.Timeout>();
 
-  constructor(private readonly collection: vscode.DiagnosticCollection) {}
+  constructor(private readonly collection?: vscode.DiagnosticCollection) {}
 
   async validateDocument(document: vscode.TextDocument): Promise<ValidationSummary> {
     if (!isMomomDocument(document)) {
@@ -49,7 +49,7 @@ export class MomomDiagnostics implements vscode.Disposable {
   }
 
   applyMomomDiagnostics(document: vscode.TextDocument, diagnostics: MomomDiagnostic[]): ValidationSummary {
-    this.collection.set(
+    this.collection?.set(
       document.uri,
       diagnostics.map((diagnostic) => diagnosticToVSCodeDiagnostic(diagnostic, document)),
     );
@@ -73,7 +73,7 @@ export class MomomDiagnostics implements vscode.Disposable {
       this.timers.delete(timerKey);
     }
 
-    this.collection.delete(document.uri);
+    this.collection?.delete(document.uri);
   }
 
   dispose(): void {
@@ -82,7 +82,7 @@ export class MomomDiagnostics implements vscode.Disposable {
     }
 
     this.timers.clear();
-    this.collection.clear();
-    this.collection.dispose();
+    this.collection?.clear();
+    this.collection?.dispose();
   }
 }

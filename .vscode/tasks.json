@@ -3,6 +3,24 @@
   "tasks": [
     {
       "type": "npm",
+      "script": "build",
+      "path": ".",
+      "label": "npm: build",
+      "problemMatcher": [
+        "$tsc"
+      ]
+    },
+    {
+      "type": "npm",
+      "script": "build:language-server",
+      "path": ".",
+      "label": "npm: build:language-server",
+      "problemMatcher": [
+        "$tsc"
+      ]
+    },
+    {
+      "type": "npm",
       "script": "build:vscode",
       "path": ".",
       "label": "npm: build:vscode",
